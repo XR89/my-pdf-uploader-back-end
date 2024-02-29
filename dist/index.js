@@ -9,7 +9,7 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const pdf_1 = require("./routes/pdf"); // Adjust the import path as necessary
 const cors_1 = __importDefault(require("cors")); // Import cors
 dotenv_1.default.config();
-const MONGO_URI = process.env.MONGO_URI || "your_default_mongo_uri";
+const MONGO_URI = process.env.MONGO_URI;
 const app = (0, express_1.default)();
 app.set("view engine", "ejs");
 app.use((0, cors_1.default)());

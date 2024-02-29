@@ -6,7 +6,7 @@ import cors from "cors"; // Import cors
 
 dotenv.config();
 
-const MONGO_URI = process.env.MONGO_URI || "your_default_mongo_uri";
+const MONGO_URI = process.env.MONGO_URI;
 const app = express();
 app.set("view engine", "ejs");
 
@@ -15,7 +15,7 @@ app.use(cors());
 const port: number = parseInt(process.env.PORT || "3000");
 
 mongoose
-  .connect(MONGO_URI)
+  .connect(MONGO_URI as string)
   .then(() => {
     console.log("Connected to MongoDB database successfully");
     const pdfRoutes = createPdfRoutes(mongoose.connection.db);

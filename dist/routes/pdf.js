@@ -31,6 +31,7 @@ const createPdfRoutes = (db) => {
         if (!req.file) {
             return res.status(400).send("No file uploaded");
         }
+        // Buffer is the raw data of the file
         const { originalname, mimetype, buffer } = req.file;
         let newFile = new pdf_1.PdfModel({
             filename: originalname,
@@ -41,15 +42,22 @@ const createPdfRoutes = (db) => {
             let uploadStream = bucket.openUploadStream(originalname);
             let readBuffer = new stream_1.Readable();
             readBuffer._read = () => { };
+            // Push the buffer (file binary data) to the read buffer for upload
             readBuffer.push(buffer);
+            // Null reference denotes the end of the file (EOF)
             readBuffer.push(null);
+            // this promise is what actually carries out the upload with the readBuffer being pushed up the uploadStream pipe
             yield new Promise((resolve, reject) => {
                 readBuffer
+                    // Pipe the read buffer to the upload stream
                     .pipe(uploadStream)
                     .on("finish", () => resolve("Successful"))
                     .on("error", () => reject("Error occurred while creating stream"));
             });
+            // file has been uploaded
+            // newFile has been assigned the id from the upload function
             newFile.id = uploadStream.id;
+            // save file metadata containing the id of the file in Mongo
             let savedFile = yield newFile.save();
             if (!savedFile) {
                 return res.status(404).send("Error occurred while saving the file");
