@@ -23,6 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.PdfModel = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 // Define the file schema
 const fileSchema = new mongoose_1.Schema({
@@ -32,5 +33,4 @@ const fileSchema = new mongoose_1.Schema({
     // id field is typically not needed to be defined explicitly as MongoDB generates _id automatically
 });
 // Create the model from the schema
-const PdfModel = mongoose_1.default.model("File", fileSchema);
-exports.default = PdfModel;
+exports.PdfModel = mongoose_1.default.model("File", fileSchema);

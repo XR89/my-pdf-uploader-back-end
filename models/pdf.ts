@@ -17,6 +17,4 @@ const fileSchema: Schema = new Schema<Pdf>({
 });
 
 // Create the model from the schema
-const PdfModel = mongoose.model<Pdf>("File", fileSchema);
-
-export default PdfModel;
+export const PdfModel = mongoose.model<Pdf>("File", fileSchema);
