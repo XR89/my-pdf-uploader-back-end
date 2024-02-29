@@ -23,7 +23,7 @@ export const createPdfRoutes = (db: Db) => {
       if (!req.file) {
         return res.status(400).send("No file uploaded");
       }
-
+      // Buffer is the raw data of the file
       const { originalname, mimetype, buffer } = req.file;
 
       let newFile = new PdfModel({
@@ -36,17 +36,26 @@ export const createPdfRoutes = (db: Db) => {
         let uploadStream = bucket.openUploadStream(originalname);
         let readBuffer = new Readable();
         readBuffer._read = () => {};
+        // Push the buffer (file binary data) to the read buffer for upload
         readBuffer.push(buffer);
+        // Null reference denotes the end of the file (EOF)
         readBuffer.push(null);
 
+        // this promise is what actually carries out the upload with the readBuffer being pushed up the uploadStream pipe
         await new Promise((resolve, reject) => {
           readBuffer
+            // Pipe the read buffer to the upload stream
             .pipe(uploadStream)
             .on("finish", () => resolve("Successful"))
             .on("error", () => reject("Error occurred while creating stream"));
         });
 
+        // file has been uploaded
+
+        // newFile has been assigned the id from the upload function
         newFile.id = uploadStream.id;
+
+        // save file metadata containing the id of the file in Mongo
         let savedFile = await newFile.save();
         if (!savedFile) {
           return res.status(404).send("Error occurred while saving the file");
@@ -64,7 +73,10 @@ export const createPdfRoutes = (db: Db) => {
   router.get("/", async (req: Request, res: Response) => {
     try {
       const filesCollection = db.collection("fs.files");
-      const files = await filesCollection.find({}).toArray();
+      const files = await filesCollection
+        .find({})
+        .sort({ datefield: -1 })
+        .toArray();
 
       const simplifiedFiles = files.map((file) => ({
         id: file._id.toString(),
@@ -81,7 +93,7 @@ export const createPdfRoutes = (db: Db) => {
     }
   });
 
-  router.get("/pdf/:fileId", (req: Request, res: Response) => {
+  const handlePdf = (req: Request, res: Response, isViewOnly: boolean) => {
     const { fileId } = req.params;
     const _id = new ObjectId(fileId);
 
@@ -89,7 +101,10 @@ export const createPdfRoutes = (db: Db) => {
 
     downloadStream.on("file", (file) => {
       res.set("Content-Type", "application/pdf");
-      res.set("Content-Disposition", `attachment; filename="${file.filename}"`);
+      res.set(
+        "Content-Disposition",
+        `${isViewOnly ? `inline` : `attachment`}; filename="${file.filename}"`
+      );
     });
 
     downloadStream.on("error", (error) => {
@@ -98,7 +113,17 @@ export const createPdfRoutes = (db: Db) => {
     });
 
     downloadStream.pipe(res);
-  });
+  };
+
+  router.get("/pdf/:fileId", (req: Request, res: Response) =>
+    handlePdf(req, res, false)
+  );
+
+  // Assuming this is within the createPdfRoutes function
+
+  router.get("/pdf/:fileId/view", (req: Request, res: Response) =>
+    handlePdf(req, res, true)
+  );
 
   return router;
 };

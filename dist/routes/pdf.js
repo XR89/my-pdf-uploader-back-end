@@ -66,7 +66,10 @@ const createPdfRoutes = (db) => {
     router.get("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         try {
             const filesCollection = db.collection("fs.files");
-            const files = yield filesCollection.find({}).toArray();
+            const files = yield filesCollection
+                .find({})
+                .sort({ datefield: -1 })
+                .toArray();
             const simplifiedFiles = files.map((file) => ({
                 id: file._id.toString(),
                 filename: file.filename,
@@ -81,20 +84,23 @@ const createPdfRoutes = (db) => {
             return res.status(500).send("Failed to retrieve files");
         }
     }));
-    router.get("/pdf/:fileId", (req, res) => {
+    const handlePdf = (req, res, isViewOnly) => {
         const { fileId } = req.params;
         const _id = new mongodb_1.ObjectId(fileId);
         let downloadStream = bucket.openDownloadStream(_id);
         downloadStream.on("file", (file) => {
             res.set("Content-Type", "application/pdf");
-            res.set("Content-Disposition", `attachment; filename="${file.filename}"`);
+            res.set("Content-Disposition", `${isViewOnly ? `inline` : `attachment`}; filename="${file.filename}"`);
         });
         downloadStream.on("error", (error) => {
             console.error("Error during file download:", error);
             return res.status(404).send("File not found");
         });
         downloadStream.pipe(res);
-    });
+    };
+    router.get("/pdf/:fileId", (req, res) => handlePdf(req, res, false));
+    // Assuming this is within the createPdfRoutes function
+    router.get("/pdf/:fileId/view", (req, res) => handlePdf(req, res, true));
     return router;
 };
 exports.createPdfRoutes = createPdfRoutes;
