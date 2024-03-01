@@ -94,13 +94,13 @@ const createPdfRoutes = (db) => {
                 uploadDate: file.uploadDate,
             }));
             res.json(simplifiedFiles);
-            console.log("Files retrieved successfully");
         }
         catch (error) {
             console.error("Failed to retrieve files:", error);
             return res.status(500).send("Failed to retrieve files");
         }
     }));
+    // Extract the common logic for the two routes into a separate function
     const handlePdf = (req, res, isViewOnly) => {
         const { fileId } = req.params;
         const _id = new mongodb_1.ObjectId(fileId);
@@ -116,12 +116,9 @@ const createPdfRoutes = (db) => {
         downloadStream.pipe(res);
     };
     router.get("/pdf/:fileId", (req, res) => handlePdf(req, res, false));
-    // Assuming this is within the createPdfRoutes function
     router.get("/pdf/:fileId/view", (req, res) => handlePdf(req, res, true));
-    // Add this inside the createPdfRoutes function
     router.delete("/pdf/:fileId/delete", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const { fileId } = req.params;
-        console.log("File ID to delete:", fileId);
         try {
             const _id = new mongodb_1.ObjectId(fileId);
             // Use await to wait for the delete operation to complete

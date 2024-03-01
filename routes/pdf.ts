@@ -98,13 +98,13 @@ export const createPdfRoutes = (db: Db) => {
       }));
 
       res.json(simplifiedFiles);
-      console.log("Files retrieved successfully");
     } catch (error) {
       console.error("Failed to retrieve files:", error);
       return res.status(500).send("Failed to retrieve files");
     }
   });
 
+  // Extract the common logic for the two routes into a separate function
   const handlePdf = (req: Request, res: Response, isViewOnly: boolean) => {
     const { fileId } = req.params;
     const _id = new ObjectId(fileId);
@@ -131,17 +131,12 @@ export const createPdfRoutes = (db: Db) => {
     handlePdf(req, res, false)
   );
 
-  // Assuming this is within the createPdfRoutes function
-
   router.get("/pdf/:fileId/view", (req: Request, res: Response) =>
     handlePdf(req, res, true)
   );
 
-  // Add this inside the createPdfRoutes function
-
   router.delete("/pdf/:fileId/delete", async (req: Request, res: Response) => {
     const { fileId } = req.params;
-    console.log("File ID to delete:", fileId);
     try {
       const _id = new ObjectId(fileId);
 
