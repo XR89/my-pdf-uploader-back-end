@@ -4,7 +4,9 @@
   "license": "MIT",
   "main": "dist/app.js",
   "scripts": {
-    "start": "tsc && node dist/index.js"
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "buildAndStart": "tsc && node dist/index.js"
   },
   "compilerOptions": {
     "outDir": "dist"
