@@ -26,6 +26,18 @@ export const createPdfRoutes = (db: Db) => {
       // Buffer is the raw data of the file
       const { originalname, mimetype, buffer } = req.file;
 
+      // Check if a file with the same name already exists
+      const existingFile = await db
+        .collection("fs.files")
+        .findOne({ filename: originalname });
+      if (existingFile) {
+        return res
+          .status(400)
+          .send(
+            "A file with the same name already exists. Please choose a different name."
+          );
+      }
+
       let newFile = new PdfModel({
         filename: originalname,
         contentType: mimetype,
@@ -75,7 +87,7 @@ export const createPdfRoutes = (db: Db) => {
       const filesCollection = db.collection("fs.files");
       const files = await filesCollection
         .find({})
-        .sort({ datefield: -1 })
+        .sort({ uploadDate: -1 })
         .toArray();
 
       const simplifiedFiles = files.map((file) => ({
@@ -124,6 +136,32 @@ export const createPdfRoutes = (db: Db) => {
   router.get("/pdf/:fileId/view", (req: Request, res: Response) =>
     handlePdf(req, res, true)
   );
+
+  // Add this inside the createPdfRoutes function
+
+  router.delete("/pdf/:fileId/delete", async (req: Request, res: Response) => {
+    const { fileId } = req.params;
+    console.log("File ID to delete:", fileId);
+    try {
+      const _id = new ObjectId(fileId);
+
+      // Use await to wait for the delete operation to complete
+      await bucket.delete(_id);
+      // If successful, send a success message
+      res.send({ message: "File successfully deleted" });
+    } catch (error) {
+      const errorMessage = (error as Error).message;
+      // Error handling for both the try-catch and the promise rejection
+      console.error(
+        "Error processing delete request or file not found:",
+        error
+      );
+      if (errorMessage.includes("FileNotFound")) {
+        return res.status(404).send("File not found");
+      }
+      return res.status(500).send("Internal server error");
+    }
+  });
 
   return router;
 };

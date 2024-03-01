@@ -1,5 +1,5 @@
 {
-  "name": "back-end",
+  "name": "offsetdata-pdf-uploader-back-end",
   "version": "1.0.0",
   "license": "MIT",
   "main": "dist/app.js",

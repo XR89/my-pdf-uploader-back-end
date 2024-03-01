@@ -33,6 +33,15 @@ const createPdfRoutes = (db) => {
         }
         // Buffer is the raw data of the file
         const { originalname, mimetype, buffer } = req.file;
+        // Check if a file with the same name already exists
+        const existingFile = yield db
+            .collection("fs.files")
+            .findOne({ filename: originalname });
+        if (existingFile) {
+            return res
+                .status(400)
+                .send("A file with the same name already exists. Please choose a different name.");
+        }
         let newFile = new pdf_1.PdfModel({
             filename: originalname,
             contentType: mimetype,
@@ -76,7 +85,7 @@ const createPdfRoutes = (db) => {
             const filesCollection = db.collection("fs.files");
             const files = yield filesCollection
                 .find({})
-                .sort({ datefield: -1 })
+                .sort({ uploadDate: -1 })
                 .toArray();
             const simplifiedFiles = files.map((file) => ({
                 id: file._id.toString(),
@@ -109,6 +118,27 @@ const createPdfRoutes = (db) => {
     router.get("/pdf/:fileId", (req, res) => handlePdf(req, res, false));
     // Assuming this is within the createPdfRoutes function
     router.get("/pdf/:fileId/view", (req, res) => handlePdf(req, res, true));
+    // Add this inside the createPdfRoutes function
+    router.delete("/pdf/:fileId/delete", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+        const { fileId } = req.params;
+        console.log("File ID to delete:", fileId);
+        try {
+            const _id = new mongodb_1.ObjectId(fileId);
+            // Use await to wait for the delete operation to complete
+            yield bucket.delete(_id);
+            // If successful, send a success message
+            res.send({ message: "File successfully deleted" });
+        }
+        catch (error) {
+            const errorMessage = error.message;
+            // Error handling for both the try-catch and the promise rejection
+            console.error("Error processing delete request or file not found:", error);
+            if (errorMessage.includes("FileNotFound")) {
+                return res.status(404).send("File not found");
+            }
+            return res.status(500).send("Internal server error");
+        }
+    }));
     return router;
 };
 exports.createPdfRoutes = createPdfRoutes;
