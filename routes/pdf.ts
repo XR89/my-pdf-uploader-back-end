@@ -5,6 +5,7 @@ import { Readable } from "stream";
 import { ObjectId, Db } from "mongodb";
 import { PdfModel } from "../models/pdf"; // Adjust the path as necessary
 import { GridFSBucket } from "mongodb";
+import mongoose from "mongoose";
 
 export const createPdfRoutes = (db: Db) => {
   const router = express.Router();
@@ -38,6 +39,7 @@ export const createPdfRoutes = (db: Db) => {
           );
       }
 
+      // Create a new file document for associated metadata
       let newFile = new PdfModel({
         filename: originalname,
         contentType: mimetype,
@@ -62,13 +64,14 @@ export const createPdfRoutes = (db: Db) => {
             .on("error", () => reject("Error occurred while creating stream"));
         });
 
-        // file has been uploaded
+        // file has been uploaded at this point
 
-        // newFile has been assigned the id from the upload function
-        newFile.id = uploadStream.id;
+        // Use the ID of the uploaded file to associate it with the file metadata
+        newFile.gridFSId = uploadStream.id;
 
         // save file metadata containing the id of the file in Mongo
         let savedFile = await newFile.save();
+
         if (!savedFile) {
           return res.status(404).send("Error occurred while saving the file");
         }
@@ -137,13 +140,22 @@ export const createPdfRoutes = (db: Db) => {
 
   router.delete("/pdf/:fileId/delete", async (req: Request, res: Response) => {
     const { fileId } = req.params;
+
+    // Delete the associated document from the database
+    try {
+      await PdfModel.deleteOne({ gridFSId: new ObjectId(req.params.fileId) });
+    } catch (error) {
+      console.error("Error deleting associated document from database:", error);
+      return res.status(500).send("Internal server error");
+    }
+    // Delete the file from the bucket
     try {
       const _id = new ObjectId(fileId);
 
       // Use await to wait for the delete operation to complete
       await bucket.delete(_id);
       // If successful, send a success message
-      res.send({ message: "File successfully deleted" });
+      res.send({ message: "File and document successfully deleted" });
     } catch (error) {
       const errorMessage = (error as Error).message;
       // Error handling for both the try-catch and the promise rejection
